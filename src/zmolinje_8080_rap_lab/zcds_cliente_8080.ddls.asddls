@@ -15,9 +15,9 @@ as select from ztb_cliente_8080 as Clientes
 {
     key RelClLib.id_libro as IDLibro,
     key Clientes.id_cliente as IdCliente,
-    key Clientes.tipo_acceso as TipoAcceso,
+    key Clientes.tipo_acceso as Acceso,
     Clientes.nombre as Nombre,
     Clientes.apellidos as Apellidos,
     Clientes.email as Email,
-    Clientes.url as Url
+    Clientes.url as Imagen
 }

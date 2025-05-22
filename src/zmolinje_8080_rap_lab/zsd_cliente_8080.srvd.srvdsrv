@@ -1,0 +1,4 @@
+@EndUserText.label: 'Libros - Service Definition'
+define service ZSD_CLIENTE_8080 {
+  expose ZCDS_LIBROS_8080 as Libros;
+}

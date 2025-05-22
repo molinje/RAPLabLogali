@@ -14,6 +14,16 @@
         value: 'Autor'
     }
 }
+
+//@Search.searchable: true Define si una entidad CDS es relevante para los 
+//escenarios de búsqueda. Esta anotación debe configurarse si se definen 
+//otras anotaciones relacionadas con la búsqueda para los elementos de la 
+//entidad CDS correspondiente. 
+//La anotación ofrece un cambio general y permite detectar rápidamente 
+//si una vista es relevante.
+@Search.searchable: true
+
+
 annotate entity ZCDS_LIBROS_8080
     with 
 {

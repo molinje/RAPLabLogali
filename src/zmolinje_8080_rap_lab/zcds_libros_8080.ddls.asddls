@@ -13,7 +13,6 @@ define view entity ZCDS_LIBROS_8080
  inner join ZCDS_CATEG_8080 as Categ on Libros.bi_categ = Categ.Categoria
  left outer join ZCDS_CLN_LIB_8080 as Ventas on Libros.id_libro = Ventas.IdLibro
  association [0..*] to ZCDS_CLIENTE_8080 as _Clientes on $projection.IdLibro = _Clientes.IDLibro
-//  inner join 
     
 {
     key Libros.id_libro as IdLibro,
