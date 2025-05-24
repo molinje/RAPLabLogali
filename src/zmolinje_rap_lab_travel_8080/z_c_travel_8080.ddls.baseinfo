@@ -3,7 +3,9 @@
 {
 "FROM":
 [
-"ZTB_TRAVEL_8080"
+"/DMO/I_AGENCY",
+"/DMO/I_CUSTOMER",
+"Z_R_TRAVEL_8080"
 ],
 "ASSOCIATED":
 [
@@ -14,7 +16,9 @@
 "Z_R_BOOKING_8080"
 ],
 "BASE":
-[],
+[
+"Z_R_TRAVEL_8080"
+],
 "ANNO_REF":
 [],
 "SCALAR_FUNCTION":
