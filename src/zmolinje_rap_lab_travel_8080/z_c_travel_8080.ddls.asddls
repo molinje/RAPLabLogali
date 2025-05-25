@@ -1,6 +1,7 @@
 @AccessControl.authorizationCheck: #NOT_REQUIRED
 @EndUserText.label: 'Travel - Consumption Entity'
 @Metadata.ignorePropagatedAnnotations: true
+
 @Metadata.allowExtensions: true
 @Search.searchable: true
 define root  view entity Z_C_TRAVEL_8080 
@@ -33,9 +34,20 @@ as projection on Z_R_TRAVEL_8080
     BookingFee,
     @Semantics.amount.currencyCode: 'CurrencyCode'
     TotalPrice,
+    @Consumption.valueHelpDefinition: [{ entity: { name: 'I_CurrencyStdVH',
+                                                         element: 'Currency'},
+                                               useForValidation: true }]
     CurrencyCode,
     Description,
+    
+     @ObjectModel.text.element: [ 'OverallStatusText' ]
+     @Consumption.valueHelpDefinition: [{ entity: { name: '/DMO/I_Overall_Status_VH',
+                                                         element: 'OverallStatus'},
+                                               useForValidation: true }]
     OverallStatus,
+    // localized aplica un Filtro por la clave del Idioma 
+    _OverallStatus._Text.Text as OverallStatusText : localized,
+    
     LocalCreatedBy,
     LocalCreatedAt,
     LocalLastChangedBy,
@@ -43,7 +55,7 @@ as projection on Z_R_TRAVEL_8080
     LastChangedAt,
     /* Associations */
     _Agency,
-    _Booking,
+    _Booking : redirected to composition child Z_C_BOOKING_8080,
     _Currency,
     _Customer,
     _OverallStatus
