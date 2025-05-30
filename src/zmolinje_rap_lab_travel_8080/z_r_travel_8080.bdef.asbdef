@@ -1,0 +1,253 @@
+managed;
+strict ( 2 );
+with draft;
+
+define behavior for Z_R_TRAVEL_8080  alias Travel
+implementation in class zbp_r_travel_8080 unique
+persistent table ztb_travel_8080
+draft table ztb_travel_80_d
+lock master
+total etag LastChangedAt
+authorization master ( instance, global )
+etag master LocalLastChangedAt
+//etag master <field_name>
+{
+  create ( precheck );
+  update ( precheck );
+  delete;
+  // la asociation hija Booking le definmos que se puede crear solo a apartir de la Entidad
+  // Padre Travel
+  association _Booking { create (features : instance, authorization : update) ; with draft; }
+
+  // esta campo clave es autogenerado y administrado internamente por SAP por medio de la
+  // propiedad : 'numbering : managed,'
+  field ( numbering : managed, readonly ) TravelUUID;
+  // capos solo de lectura
+  field (readonly)  TravelID,
+                    OverallStatus,
+                    TotalPrice,
+                    LastChangedAt,
+                    LocalCreatedAt,
+                    LocalCreatedBy,
+                    LocalLastChangedAt,
+                    LocalLastChangedBy;
+
+  // Campos Obligatios
+  field (mandatory) CustomerID,
+                    CurrencyCode,
+                    AgencyID,
+                    BeginDate,
+                    EndDate;
+
+  field( features : instance) BookingFee;
+
+  determination setTravelNumber on save { create;}
+  determination setStatusToOpen on modify { create;}
+  determination calculateTotalPrice on modify { create; field BookingFee, CurrencyCode; }
+
+
+  // -- Botones--
+  action (features : instance, authorization : update) acceptTravel result [1] $self;
+  action (features : instance, authorization : update) rejectTravel result [1] $self;
+  // en la siguiente Action utilizamos una CDS Absatracta para el formulario de tipo PopUp
+  // que recibe el parametro que nos va a ayudar a calcular Un porcentaje de descuento
+  action (features : instance, authorization : update) deductDiscount parameter Z_AE_DISCOUNT_8080 result [1] $self;
+  // -- Acción que NO es un Boton--
+  internal action recalTotalPrice;
+
+  // -- validacines --
+  validation validateCustomer on save { create; field CustomerID; }
+  validation validateAgency on save { create; field AgencyID; }
+  // la siguinete validacion se utiliza  para dos campos diferentes
+  validation validateDates on save { create; field BeginDate, EndDate; }
+  validation validateCurrency on save { create; field CurrencyCode; }
+  validation validateBookingFee on save { create; field CurrencyCode; }
+
+  determine action validateCustomerID { validation validateCustomer; }
+  determine action validateAgencyID { validation validateAgency; }
+  determine action validateDateRange { validation  validateDates; }
+
+  // se pueden tener Side effects en base a las validaciones
+  // manejar efectos secundarios
+  side effects {
+
+    field BookingFee affects  field TotalPrice;
+    // se ejecuta cada vez que se cambia el CustomerID y genera los mensajes corrsodientes en caso
+    // que se necesite, por ejemplo , mensaje y color en rojo el campo si el usuario ha colocado un
+    // Customer ID valido o que exista en base de datos
+    determine action validateCustomerID executed on field CustomerID affects messages;
+	determine action validateAgencyID executed on field AgencyID affects messages;
+	determine action validateDateRange executed on field BeginDate, field EndDate affects messages;
+	
+
+
+    }
+
+// las siguientes instrucciones borra los mensajes de error que estaban saliendo
+// en la linea 5 :  define behavior for Z_R_TRAVEL_8080  alias Travel
+// el mensaje de error pedia un draft action
+    draft action Edit;
+    draft action Activate optimized;
+    draft action Discard;
+    draft action Resume with additional implementation;
+
+// Desde la capa Superior,  Entidad de mas alto nivel podemos demandar la ejecucion de validaciones de sus
+// Entidades hijas y nietas , en este caso validaciones de las capas corresoondientes al Booking(Hijo) y BookingSupplement(Nieto)
+   draft determine action Prepare {
+
+    validation validateCustomer;
+    validation validateAgency;
+    validation validateDates;
+    validation validateCurrency;
+    validation Booking~validateCustomer;
+    validation Booking~validateConnection;
+    validation Booking~validateCurrency;
+    validation Booking~validateFlightPrice;
+    validation Booking~validateStatus;
+
+    validation BookingSupplement~validateSupplement;
+    validation BookingSupplement~validateCurrency;
+    validation BookingSupplement~validatePrice;
+
+   }
+
+
+  mapping for ztb_travel_8080
+    {
+      TravelUUID         = travel_uuid;
+      TravelID           = travel_id;
+      AgencyID           = agency_id;
+      CustomerID         = customer_id;
+      BeginDate          = begin_date;
+      EndDate            = end_date;
+      BookingFee         = booking_fee;
+      TotalPrice         = total_price;
+      CurrencyCode       = currency_code;
+      Description        = description;
+      OverallStatus      = overall_status;
+      LocalCreatedBy     = local_created_by;
+      LocalCreatedAt     = local_created_at;
+      LocalLastChangedBy = local_last_changed_by;
+      LocalLastChangedAt = local_last_changed_at;
+      LastChangedAt      = last_changed_at;
+    }
+}
+
+define behavior for Z_R_BOOKING_8080 alias Booking
+implementation in class zbp_r_booking_8080 unique
+persistent table ztb_booking_8080
+draft table ztb_booking_80_d
+lock dependent by _Travel
+authorization dependent by _Travel
+etag master LastChangedAt
+{
+  update;
+  delete;
+  association _BookingSupplement { create ( authorization : update ); with draft; }
+  association _Travel {with draft;}
+
+  field ( numbering : managed, readonly ) BookingUUID;
+  field ( readonly ) TravelUUID, BookingID, Bookingdate, LastChangedAt;
+  field ( mandatory ) CustomerID, AirlineID, ConnectionID, FlightDate, FlightPrice, CurrencyCode;
+
+  determination setBookingNumber on save { create;}
+  determination setBookingDate on modify { create;}
+  determination calculateTotalPrice on modify { create; field FlightPrice, CurrencyCode; }
+    // -- validacines --
+  validation validateCustomer on save { create; field CustomerID; }
+  validation validateConnection on save { create; field AirlineID, ConnectionID, FlightDate; }
+  validation validateCurrency on save { create; field CurrencyCode; }
+  validation validateflightPrice on save { create; field FlightPrice; }
+  validation validateStatus on save { create; field BookingStatus; }
+
+  determine action validateFlighCosts {validation validateflightPrice;}
+
+  side effects {
+
+    field FlightPrice affects  field _Travel.TotalPrice;
+
+    determine action validateFlighCosts executed on field FlightPrice affects messages;
+
+    }
+
+
+     mapping for ztb_booking_8080
+    {
+      BookingUUID        = booking_uuid;
+      TravelUUID         = parent_uuid;
+      BookingID          = booking_id;
+      BookingDate        = booking_date;
+      CustomerID         = customer_id;
+      AirlineID          = carrier_id;
+      ConnectionID       = connection_id;
+      FlightDate         = flight_date;
+      FlightPrice        = flight_price;
+      CurrencyCode       = currency_code;
+      BookingStatus      = booking_status;
+      LastChangedAt      = last_changed_at;
+    }
+
+}
+
+define behavior for z_r_booksup_8080 alias BookingSupplement
+implementation in class zbp_r_booksup_8080 unique
+persistent table ztb_booksup_8080
+draft table ztb_booksup_80_d
+lock dependent by _Travel
+authorization dependent by _Travel
+etag master LastChangedAt
+{
+  update;
+  delete;
+  association _Travel { with draft; }
+  association _Booking { with draft; }
+
+  field ( numbering : managed, readonly ) BookSupplUUID ;
+  field ( readonly ) TravelUUID, BookingUUID, BookingSupplementID,LastChangedAt;
+  field ( mandatory ) SupplementID, Price, CurrencyCode;
+
+  // Determinations para reclaculos desde este nieto hacia su Abuelo _Travel una modificacion en costos de un Suplemento
+  // debe recalcular el Precio Total del Viaje, los sumplementos no afectan el precio de la reserva o _Booking,
+  // son valores que se suman independientes
+  // Algo asi _TRavel 1..... TotalPrice    = 80
+  // ........  _Booking 1A.....FlightPrice = 20
+  //              _BookSuppl   Price       =  5
+  // ........  _Booking 1B.....FlightPrice = 20
+  //              _BookSuppl   Price       =  5
+  // ........  _Booking 1C.....FlightPrice = 20
+  //              _BookSuppl   Price       =  5
+  //              _BookSuppl   Price       =  5
+
+
+  determination setBookSupplNumber on modify { create; }
+  determination calculateTotalPrice on modify { create; field Price, CurrencyCode; }
+
+  // Validaciones
+  validation validateSupplement on save { create; field SupplementID; }
+  validation validateCurrency on save { create; field CurrencyCode; }
+  validation validatePrice on save { create; field Price; }
+
+  determine action validateSupplementPrice { validation validatePrice; }
+
+  side effects
+  {
+    // El campo Price del BookSupplement se necesita que tenga afectacion o actualización en el TotalPrice del abuelo
+    // _Travel
+    field Price affects field _Travel.TotalPrice;
+    determine action validateSupplementPrice executed on field Price affects messages;
+  }
+
+  mapping for ztb_booksup_8080
+    {
+      BookSupplUUID       = booksuppl_uuid;
+      TravelUUID          = root_uuid;
+      BookingUUID         = parent_uuid;
+      BookingSupplementID = booking_supplement_id;
+      SupplementID        = supplement_id;
+      Price               = price;
+      CurrencyCode        = currency_code;
+      LastChangedAt       = last_changed_at;
+    }
+
+
+}

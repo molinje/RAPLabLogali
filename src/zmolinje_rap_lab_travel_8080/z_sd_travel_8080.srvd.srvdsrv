@@ -1,0 +1,6 @@
+@EndUserText.label: 'Travel - Service Definition'
+define service Z_SD_TRAVEL_8080 {
+  expose Z_C_TRAVEL_8080  as Travel;
+  expose Z_C_BOOKING_8080 as Booking;
+  expose Z_C_BOOKSUP_8080 as BookingSupplement;
+}

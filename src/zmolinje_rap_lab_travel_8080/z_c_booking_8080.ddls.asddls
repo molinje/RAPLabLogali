@@ -4,7 +4,8 @@
 
 @Metadata.allowExtensions: true
 @Search.searchable: true
-define view entity Z_C_BOOKING_8080 as projection on Z_R_BOOKING_8080
+define view entity Z_C_BOOKING_8080 
+as projection on Z_R_BOOKING_8080
 {
     key BookingUUID,
     TravelUUID,
