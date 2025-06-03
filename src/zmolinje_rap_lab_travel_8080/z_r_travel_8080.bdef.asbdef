@@ -41,8 +41,10 @@ etag master LocalLastChangedAt
 
   field( features : instance) BookingFee;
 
-  determination setTravelNumber on save { create;}
-  determination setStatusToOpen on modify { create;}
+// ---- Determinaciones o metodos que la aplicacion va a generar en la clase
+  determination setTravelNumber on save { create;} // siempre se calcula
+  determination setStatusToOpen on modify { create;} // siempre se calcula
+  // calculateTotalPrice solo se ejecuta cuando cambia los campos BookingFee, CurrencyCode
   determination calculateTotalPrice on modify { create; field BookingFee, CurrencyCode; }
 
 
@@ -61,7 +63,7 @@ etag master LocalLastChangedAt
   // la siguinete validacion se utiliza  para dos campos diferentes
   validation validateDates on save { create; field BeginDate, EndDate; }
   validation validateCurrency on save { create; field CurrencyCode; }
-  validation validateBookingFee on save { create; field CurrencyCode; }
+  validation validateBookingFee on save { create; field BookingFee; }
 
   determine action validateCustomerID { validation validateCustomer; }
   determine action validateAgencyID { validation validateAgency; }
@@ -72,7 +74,7 @@ etag master LocalLastChangedAt
   side effects {
 
     field BookingFee affects  field TotalPrice;
-    // se ejecuta cada vez que se cambia el CustomerID y genera los mensajes corrsodientes en caso
+    // se ejecuta cada vez que se cambia el CustomerID y genera los mensajes corresodientes en caso
     // que se necesite, por ejemplo , mensaje y color en rojo el campo si el usuario ha colocado un
     // Customer ID valido o que exista en base de datos
     determine action validateCustomerID executed on field CustomerID affects messages;
