@@ -55,7 +55,8 @@ etag master LocalLastChangedAt
   // que recibe el parametro que nos va a ayudar a calcular Un porcentaje de descuento
   action (features : instance, authorization : update) deductDiscount parameter Z_AE_DISCOUNT_8080 result [1] $self;
   // -- Acción que NO es un Boton--
-  internal action recalTotalPrice;
+  //internal action recalTotalPrice;
+  internal action reCalcTotalPrice;
 
   // -- validacines --
   validation validateCustomer on save { create; field CustomerID; }

@@ -42,9 +42,43 @@ CLASS lhc_Booking IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD calculateTotalPrice.
+
+   " Parent UUIDs
+    read entities of z_r_travel_8080 in local mode
+         entity Booking by \_Travel
+         fields ( TravelUUID  )
+         with corresponding #(  keys  )
+         result data(travels).
+
+    " Trigger Re-Calculation on Root Node
+    modify entities of z_r_travel_8080 in local mode
+      entity Travel
+        execute reCalcTotalPrice
+          from corresponding  #( travels ).
+
   ENDMETHOD.
 
   METHOD setBookingDate.
+
+   read entities of z_r_travel_8080 in local mode
+       entity Booking
+         fields ( BookingDate )
+         with corresponding #( keys )
+       result data(bookings).
+
+    delete bookings where BookingDate is not initial.
+    check bookings is not initial.
+
+    loop at bookings assigning field-symbol(<booking>).
+      <booking>-BookingDate = cl_abap_context_info=>get_system_date( ).
+    endloop.
+
+    modify entities of z_r_travel_8080 in local mode
+      entity Booking
+        update  fields ( BookingDate )
+        with corresponding #( bookings ).
+
+
   ENDMETHOD.
 
   METHOD setBookingNumber.
@@ -95,6 +129,63 @@ CLASS lhc_Booking IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD validateCustomer.
+
+   data customers type sorted table of /dmo/customer with unique key client customer_id.
+
+    read entities of z_r_travel_8080 in local mode
+         entity Booking
+         fields (  CustomerID )
+         with corresponding #( keys )
+         result data(bookings).
+
+    read entities of z_r_travel_8080 in local mode
+         entity Booking by \_Travel
+         from corresponding #( bookings )
+         link data(travel_booking_links).
+
+    customers = corresponding #( bookings discarding duplicates mapping customer_id = CustomerID except * ).
+    delete customers where customer_id is initial.
+
+
+    if customers is not initial.
+
+      select from /dmo/customer as db
+             inner join @customers as it on db~customer_id = it~customer_id
+             fields db~customer_id
+             into table @data(valid_customers).
+
+    endif.
+
+    loop at bookings into data(booking).
+
+      append value #( %tky        = booking-%tky
+                      %state_area = 'VALIDATE_CUSTOMER' ) to reported-booking.
+
+      if booking-CustomerID is initial.
+
+        append value #( %tky = booking-%tky ) to failed-booking.
+
+        append value #( %tky                = booking-%tky
+                        %state_area         = 'VALIDATE_CUSTOMER'
+                        %msg                = new /dmo/cm_flight_messages( textid   = /dmo/cm_flight_messages=>enter_customer_id
+                                                                           severity = if_abap_behv_message=>severity-error )
+                        %element-CustomerID = if_abap_behv=>mk-on ) to reported-booking.
+
+      elseif not line_exists( valid_customers[ customer_id = booking-CustomerID ] ).
+
+        append value #( %tky = booking-%tky ) to failed-booking.
+
+        append value #( %tky                = booking-%tky
+                        %state_area         = 'VALIDATE_CUSTOMER'
+                        %msg                = new /dmo/cm_flight_messages( textid   = /dmo/cm_flight_messages=>customer_unkown
+                                                                           customer_id = booking-CustomerID
+                                                                           severity = if_abap_behv_message=>severity-error )
+                        %element-CustomerID = if_abap_behv=>mk-on ) to reported-booking.
+
+      endif.
+
+    endloop.
+
   ENDMETHOD.
 
   METHOD validateflightPrice.

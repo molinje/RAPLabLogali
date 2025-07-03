@@ -34,6 +34,12 @@ as projection on Z_R_TRAVEL_8080
     BookingFee,
     @Semantics.amount.currencyCode: 'CurrencyCode'
     TotalPrice,
+    
+    @EndUserText.label: 'VAT Included'
+    @Semantics.amount.currencyCode: 'CurrencyCode'
+    @ObjectModel.virtualElementCalculatedBy: 'ABAP:ZCL_349_VIRT_EL_LGL'
+    virtual PriceWithVAT : /dmo/total_price,    
+    
     @Consumption.valueHelpDefinition: [{ entity: { name: 'I_CurrencyStdVH',
                                                          element: 'Currency'},
                                                useForValidation: true }]
